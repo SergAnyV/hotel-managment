@@ -54,7 +54,9 @@ public final class StringText {
     public static final String PROMO_CODE = "Промокод ";
     public static final String ABSENT = "отсутствует";
     public static final String NOT_AVAILABLE = "Ваш выбор не доступен.";
-    public static final String AVAILABLE_ROOMS = "Доступные комнаты для демонстрационного отеля 101,201,301,401,102,202,302,402,203,103";
+    public static final String AVAILABLE_ROOMS = "Доступные комнаты для демонстрационного отеля 101, 201, 301,401,102,202,302,402,203,103";
+
+
 
 
     public static final String NICKNAME_KEY = "nickName";
