@@ -98,7 +98,7 @@ public class GetServiceInfoProcessHandler extends AbstractProcessHandler impleme
      * @param session     сессия пользователя
      */
     private void handleServiceName(long chatId, String serviceName, UserSession session) {
-        String normalizedServiceName = serviceName.strip().toLowerCase();
+        String normalizedServiceName = normalizeInutLine(serviceName);
 
         if (normalizedServiceName.isBlank()) {
             sendMessageWithBackButton(chatId, StringText.PLEASE_ENTER_WRIGHT_DATA);
@@ -121,9 +121,14 @@ public class GetServiceInfoProcessHandler extends AbstractProcessHandler impleme
         } catch (Exception e) {
             sendMessageWithMenu(chatId, StringText.PROBLEM_TRY_AGAIN_LATER, isUserAuthenticated(chatId));
             log.error("Ошибка при получении информации о комнате {} для пользователя chatId, {}", normalizedServiceName, chatId, e);
+        } finally {
+            session.resetProcessTypeAndState();
         }
 
-        session.resetProcessTypeAndState();
+    }
+
+    private String normalizeInutLine(String input) {
+        return input.replaceAll("[^\\p{L}]", "").toLowerCase();
     }
 
     /**

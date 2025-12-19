@@ -15,6 +15,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
+import static com.asv.services.StringText.*;
+
 /**
  * Обработчик процесса получения информации о номере отеля по его номеру.
  * Реализует одностадийную логику: запрос номера комнаты → обращение к сервису отеля →
@@ -81,7 +83,7 @@ public class GetRoomInfoProcessHandler extends AbstractProcessHandler implements
         } else {
             log.warn("Неизвестное состояние для GET_ROOM_INFO: {}", currentState);
             session.resetProcess();
-            sendMessageWithMenu(chatId, StringText.PROBLEM_TRY_AGAIN_LATER, false);
+            sendMessageWithMenu(chatId, PLEASE_ENTER_WRIGHT_DATA + NOT_AVAILABLE + AVAILABLE_ROOMS, isUserAuthenticated(chatId));
         }
 
         updateSessionActivity(session);
@@ -99,10 +101,10 @@ public class GetRoomInfoProcessHandler extends AbstractProcessHandler implements
      * @param session    сессия пользователя
      */
     private void handleRoomNumber(long chatId, String roomNumber, UserSession session) {
-        String normalizedRoomNumber = roomNumber.strip();
+        String normalizedRoomNumber = normalizeInutLine(roomNumber);
 
         if (normalizedRoomNumber.isBlank()) {
-            sendMessageWithBackButton(chatId, StringText.PLEASE_ENTER_WRIGHT_DATA);
+            sendMessageWithMenu(chatId, PLEASE_ENTER_WRIGHT_DATA + NOT_AVAILABLE + AVAILABLE_ROOMS, isUserAuthenticated(chatId));
             return;
         }
 
@@ -115,16 +117,20 @@ public class GetRoomInfoProcessHandler extends AbstractProcessHandler implements
                 sendMessageWithMenu(chatId, message, isUserAuthenticated(chatId));
                 log.info("Информация о комнате {} отправлена пользователю chatId, {}", roomNumber, chatId);
             } else {
-                sendMessageWithMenu(chatId, StringText.ROOM + normalizedRoomNumber + StringText.NOT_FOUND,
-                        isUserAuthenticated(chatId));
+                sendMessageWithMenu(chatId, PLEASE_ENTER_WRIGHT_DATA + NOT_AVAILABLE + AVAILABLE_ROOMS, isUserAuthenticated(chatId));
                 log.warn("Комната {} не найдена для пользователя chatId, {}", normalizedRoomNumber, chatId);
             }
         } catch (Exception e) {
-            sendMessageWithMenu(chatId, StringText.PROBLEM_TRY_AGAIN_LATER, isUserAuthenticated(chatId));
+            sendMessageWithMenu(chatId, PLEASE_ENTER_WRIGHT_DATA + NOT_AVAILABLE + AVAILABLE_ROOMS, isUserAuthenticated(chatId));
             log.error("Ошибка при получении информации о комнате {} для пользователя chatId, {}", normalizedRoomNumber, chatId, e);
+        }finally {
+            session.resetProcessTypeAndState();
         }
 
-        session.resetProcessTypeAndState();
+    }
+
+    private String normalizeInutLine(String input) {
+        return input.replaceAll("[^\\p{L}\\p{N}]", "").toLowerCase();
     }
 
     /**
