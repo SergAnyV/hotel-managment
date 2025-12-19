@@ -52,7 +52,10 @@ public class JWTUtils {
 
     SecretKey getAccessSigningKey() {
         if (cachedAccessKey == null) {
-            byte[] keyBytes = Decoders.BASE64.decode(jwtSecretsProperties.getAccess());
+            String accessSecret = jwtSecretsProperties.getAccess();
+            log.warn("Access secret значение: {}", accessSecret);
+
+            byte[] keyBytes = Decoders.BASE64.decode(accessSecret);
             cachedAccessKey = Keys.hmacShaKeyFor(keyBytes);
         }
         return cachedAccessKey;
@@ -126,7 +129,7 @@ public class JWTUtils {
             throw new IllegalArgumentException("Invalid JWT token");
         }
 
-        String payload = new String(Base64.getUrlDecoder().decode(parts[1]));
+        String payload = new String(Decoders.BASE64URL.decode(parts[1]));
         JsonObject jsonPayload = JsonParser.parseString(payload).getAsJsonObject();
 
         long exp = jsonPayload.get("exp").getAsLong() * 1000;

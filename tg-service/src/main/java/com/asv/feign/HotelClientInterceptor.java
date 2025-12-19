@@ -31,7 +31,7 @@ public class HotelClientInterceptor implements RequestInterceptor {
         if (shouldAddInterceptorChatIdToken(requestTemplate)) {
             try {
                 String token = chatEntityRepository.findTokenByChatId(chatId).orElseThrow(() -> new RuntimeException());
-                requestTemplate.header("Authorization", "Bearer " + token);
+                requestTemplate.header("Authorization", "Bearer" + token);
             } catch (Exception e) {
                 log.warn("Токен не найден для chatId={}, но требуется авторизация", chatId);
             }
