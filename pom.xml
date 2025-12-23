@@ -22,12 +22,14 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <spring-cloud.version>2025.0.0</spring-cloud.version>
     </properties>
+
     <modules>
         <module>discovery-service</module>
         <module>config-service</module>
         <module>hotel</module>
         <module>tg-service</module>
     </modules>
+
     <dependencyManagement>
         <dependencies>
             <dependency>

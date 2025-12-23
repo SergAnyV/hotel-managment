@@ -510,7 +510,7 @@ public class BookingCreationProcessHandler extends AbstractProcessHandler implem
             } else {
                 log.error("Неверные даты для бронирования номера" +
                         "chatId {} ,даты {} - {} , room N {} ", chatId, checkInDate, checkOutDate, userInput);
-                sendMessageWithMenu(chatId, PLEASE_ENTER_WRIGHT_DATA + NOT_AVAILABLE + AVAILABLE_ROOMS, isUserAuthenticated(chatId));
+                sendMessageWithMenu(chatId, NOT_AVAILABLE , isUserAuthenticated(chatId));
                 session.resetProcessTypeAndState();
             }
 
@@ -524,7 +524,7 @@ public class BookingCreationProcessHandler extends AbstractProcessHandler implem
     }
 
     /**
-     * Проверяет, входит ли указанный номер комнаты в список свободных на заданный период.
+     * Проверяет, входит ли указанный номер комнаты в список свободных на заданный период или нет.
      *
      * @param roomSimpleDataBaseDTOList список DTO свободных комнат
      * @param roomDTO                   DTO запрошенной комнаты

@@ -42,7 +42,7 @@ public class JWTUtils {
     private static final String SHIELDED_POINT = "\\.";
     public static final String BEARER = "Bearer";
     public static final String AUTHORIZATION = "Authorization";
-    public static final int NUMBER_FOR_CUTTING_TOKEN = 7;
+    public static final int NUMBER_FOR_CUTTING_TOKEN = 6;
 
 
     public String generateAccessToken(UserDetails userDetails) {
