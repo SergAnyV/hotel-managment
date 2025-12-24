@@ -42,3 +42,5 @@ bin/
 # Environment
 .env
 .env.local
+
+amplicode.xml
