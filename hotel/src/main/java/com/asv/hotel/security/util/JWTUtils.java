@@ -53,7 +53,6 @@ public class JWTUtils {
     SecretKey getAccessSigningKey() {
         if (cachedAccessKey == null) {
             String accessSecret = jwtSecretsProperties.getAccess();
-            log.warn("Access secret значение: {}", accessSecret);
 
             byte[] keyBytes = Decoders.BASE64.decode(accessSecret);
             cachedAccessKey = Keys.hmacShaKeyFor(keyBytes);

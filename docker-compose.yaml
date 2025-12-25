@@ -13,6 +13,8 @@ services:
       - "5433:5432"
     volumes:
       - postgres_:/var/lib/postgresql/data
+#      - убрано ,так как при запуске первым запускается развертывание бд, а потом создание таблиц,таблицы создаются
+#        через Hibernate , каждого приложения, и загружаются оттуда
 #      - ./docker/postgres:/docker-entrypoint-initdb.d
     networks:
       - hotel-network
@@ -30,8 +32,6 @@ services:
     container_name: discovery-service
     ports:
       - "8081:8081"
-    environment:
-      SPRING_PROFILES_ACTIVE: docker
     depends_on:
       postgres-db:
         condition: service_healthy
@@ -39,7 +39,7 @@ services:
       - hotel-network
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8081/actuator/health"]
-      interval: 30s
+      interval: 20s
       timeout: 10s
       retries: 3
 
@@ -51,8 +51,6 @@ services:
     container_name: config-service
     ports:
       - "8082:8082"
-    environment:
-      SPRING_PROFILES_ACTIVE: docker,native
     volumes:
       - ./config-service/src/main/resources/services:/config/services:ro
     depends_on:
@@ -62,7 +60,7 @@ services:
       - hotel-network
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8082/actuator/health"]
-      interval: 30s
+      interval: 20s
       timeout: 10s
       retries: 3
 
@@ -75,11 +73,18 @@ services:
     ports:
       - "8080:8083"
     environment:
-      SPRING_PROFILES_ACTIVE: docker
+      SPRING_PROFILES_ACTIVE: prod
       SPRING_CONFIG_IMPORT: configserver:http://config-service:8082
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://discovery-service:8081/eureka/
       DB_USER: ${DB_USER:-postgres}
       DB_PASSWORD: ${DB_PASSWORD:-postgres}
+      ACCEESS_SECRET: ${ACCEESS_SECRET}
+      REFRESH_SECRET: ${REFRESH_SECRET}
+      MAIL_USERNAME: ${MAIL_USERNAME}
+      MAIL_PASSWORD: ${MAIL_PASSWORD}
+      MAIL_SMTP: ${MAIL_SMTP}
+      MAIL_PORT: ${MAIL_PORT}
+      MAIL_FROM: ${MAIL_FROM}
     depends_on:
       config-service:
         condition: service_healthy
@@ -89,7 +94,7 @@ services:
       - hotel-network
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8083/actuator/health"]
-      interval: 30s
+      interval: 20s
       timeout: 10s
       retries: 3
 
@@ -100,13 +105,12 @@ services:
       dockerfile: Dockerfile
     container_name: tg-service
     environment:
-      SPRING_PROFILES_ACTIVE: docker
       SPRING_CONFIG_IMPORT: configserver:http://config-service:8082
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://discovery-service:8081/eureka/
-      DB_USER: ${DB_USER:-postgres}
-      DB_PASSWORD: ${DB_PASSWORD:-postgres}
-      # TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN}
-      # JWT_SECRET: ${JWT_SECRET}
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+      TG_TOKEN: ${TG_TOKEN}
+      TG_BOT_NAME: ${TG_BOT_NAME}
     depends_on:
       config-service:
         condition: service_healthy
@@ -116,7 +120,7 @@ services:
       - hotel-network
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8084/actuator/health"]
-      interval: 30s
+      interval: 20s
       timeout: 10s
       retries: 3
 
