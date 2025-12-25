@@ -94,7 +94,7 @@ services:
       - hotel-network
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8083/actuator/health"]
-      interval: 20s
+      interval: 10s
       timeout: 10s
       retries: 3
 
@@ -120,7 +120,7 @@ services:
       - hotel-network
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8084/actuator/health"]
-      interval: 20s
+      interval: 30s
       timeout: 10s
       retries: 3
 
