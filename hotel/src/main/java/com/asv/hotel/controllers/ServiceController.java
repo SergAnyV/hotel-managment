@@ -15,7 +15,33 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-
+/**
+ * Контроллер для управления дополнительными сервисами отеля (например: спа, парковка, завтрак и т.д.).
+ * <p>
+ * Предоставляет RESTful эндпоинты для:
+ * <ul>
+ *   <li>получения полного списка сервисов (включая неактивные);</li>
+ *   <li>поиска сервиса по названию (регистронезависимо);</li>
+ *   <li>создания нового типа сервиса;</li>
+ *   <li>удаления сервиса по его названию.</li>
+ * </ul>
+ * </p>
+ * <p>
+ * Название сервиса:
+ * <ul>
+ *   <li>не может быть пустым;</li>
+ *   <li>должно содержать от 3 до 20 символов;</li>
+ *   <li>сравнение при поиске и удалении выполняется без учёта регистра.</li>
+ * </ul>
+ * </p>
+ * <p>
+ * Все входные DTO проходят валидацию через Jakarta Bean Validation.
+ * Контроллер интегрирован с OpenAPI (Swagger) для генерации документации.
+ * </p>
+ *
+ * @see ServiceHotelDTO
+ * @see ServiceHotelService
+ */
 @RestController
 @RequestMapping("/services")
 @RequiredArgsConstructor
@@ -23,7 +49,12 @@ import java.util.List;
 @Validated
 public class ServiceController {
     private final ServiceHotelService serviceHotelService;
-
+    /**
+     * Возвращает список всех зарегистрированных сервисов отеля (включая неактивные).
+     *
+     * @return {@link ResponseEntity} со списком {@link ServiceHotelDTO} и статусом {@code 200 OK}
+     *         (может быть пустым, если сервисы отсутствуют)
+     */
     @Operation(summary = "Получить все сервисы в отеле",
             description = "Возвращает список всех сервисов включая неактивные")
     @ApiResponse(responseCode = "200", description = "Успешный запрос")
@@ -31,7 +62,14 @@ public class ServiceController {
     public ResponseEntity<List<ServiceHotelDTO>> getAll() {
         return ResponseEntity.ok(serviceHotelService.findAllHotelServices());
     }
+    /**
+     * Возвращает данные сервиса по его названию (поиск без учёта регистра).
+     *
+     * @param title название сервиса (обязательное, длина от 3 до 20 символов)
+     * @return {@link ResponseEntity} с объектом {@link ServiceHotelDTO} и статусом {@code 200 OK}
 
+     * @throws jakarta.validation.ConstraintViolationException если название не соответствует требованиям длины или пусто
+     */
     @Operation(summary = "Найти service по названию  не зависимо от регистра",
             description = "Возвращает service по названию")
     @ApiResponse(responseCode = "200", description = "service найден")
@@ -44,7 +82,13 @@ public class ServiceController {
             String title) {
         return ResponseEntity.ok(serviceHotelService.findServiceHotelDTOByTitle(title));
     }
-
+    /**
+     * Создаёт новый тип дополнительного сервиса.
+     *
+     * @param serviceHotelDTO DTO с данными нового сервиса (обязательный, проходит валидацию)
+     * @return {@link ResponseEntity} с созданным {@link ServiceHotelDTO} и статусом {@code 201 CREATED}
+     * @throws jakarta.validation.ValidationException если данные в DTO не прошли валидацию
+     */
     @Operation(summary = "Создать новый тип service",
             description = "создает новый тип service")
     @ApiResponse(responseCode = "201", description = "тип service создан")
@@ -53,7 +97,13 @@ public class ServiceController {
     public ResponseEntity<ServiceHotelDTO> createServiceHotel(@RequestBody @Valid ServiceHotelDTO serviceHotelDTO) {
         return ResponseEntity.status(HttpStatus.CREATED).body(serviceHotelService.createServiceHotel(serviceHotelDTO));
     }
-
+    /**
+     * Удаляет сервис по его названию (сравнение без учёта регистра).
+     *
+     * @param title название сервиса (обязательное, длина от 3 до 20 символов)
+     * @return {@link ResponseEntity} со статусом {@code 204 NO CONTENT} при успешном удалении
+     * @throws com.asv.hotel.exceptions.HotelEntityNotFoundException если сервис не найден
+     */
     @Operation(summary = "Удалить данные тип service",
             description = "Удалить данные существующего тип service")
     @ApiResponse(responseCode = "204", description = "тип service Удален")

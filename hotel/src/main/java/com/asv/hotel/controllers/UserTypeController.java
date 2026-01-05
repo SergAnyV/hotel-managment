@@ -15,7 +15,33 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-
+/**
+ * Контроллер для управления типами пользователей (ролями) в системе.
+ * <p>
+ * Обеспечивает CRUD-операции над сущностью "тип пользователя":
+ * <ul>
+ *   <li>получение всех типов;</li>
+ *   <li>поиск по названию роли (регистронезависимо);</li>
+ *   <li>создание нового типа;</li>
+ *   <li>удаление по названию роли;</li>
+ *   <li>обновление данных существующего типа.</li>
+ * </ul>
+ * </p>
+ * <p>
+ * Название роли (тип пользователя):
+ * <ul>
+ *   <li>должно содержать от 3 до 100 символов;</li>
+ *   <li>может включать буквы (кириллица и латиница), цифры, пробелы и дефисы.</li>
+ * </ul>
+ * </p>
+ * <p>
+ * Все входные DTO проходят валидацию через Jakarta Bean Validation.
+ * Интеграция с OpenAPI (Swagger) обеспечивает автоматическую документацию API.
+ * </p>
+ *
+ * @see UserTypeDTO
+ * @see UserTypeService
+ */
 @RestController
 @RequestMapping("/user-types")
 @RequiredArgsConstructor
@@ -24,6 +50,11 @@ import java.util.List;
 public class UserTypeController {
     private final UserTypeService userTypeService;
 
+    /**
+     * Возвращает список всех типов пользователей (ролей), зарегистрированных в системе.
+     *
+     * @return {@link ResponseEntity} со списком {@link UserTypeDTO} и статусом {@code 200 OK}
+     */
     @Operation(summary = "Получить все типы пользователей",
             description = "Возвращает список всех типов пользователей")
     @ApiResponse(responseCode = "200", description = "Успешный запрос")
@@ -32,6 +63,12 @@ public class UserTypeController {
         return ResponseEntity.ok(userTypeService.findAllUserTypeDTOs());
     }
 
+    /**
+     * Возвращает тип пользователя по названию роли (поиск без учёта регистра).
+     *
+     * @param role название роли (длина 3–100 символов, допустимы буквы, цифры, пробелы и дефисы)
+     * @return {@link ResponseEntity} с объектом {@link UserTypeDTO} и статусом {@code 200 OK}
+     */
     @Operation(summary = "Найти тип юзера по названию роли не зависимо от регистра",
             description = "Возвращает данные типа юзера по названию типа ")
     @ApiResponse(responseCode = "200", description = "тип найден")
@@ -46,6 +83,12 @@ public class UserTypeController {
         return ResponseEntity.ok(userTypeDTO);
     }
 
+    /**
+     * Создаёт новый тип пользователя (роль).
+     *
+     * @param userTypeDTO DTO с данными нового типа (проходит валидацию)
+     * @return {@link ResponseEntity} с созданным {@link UserTypeDTO} и статусом {@code 201 CREATED}
+     */
     @Operation(summary = "Создать новый тип юзера",
             description = "создает новый тип юзера")
     @ApiResponse(responseCode = "201", description = "тип юзера создан")
@@ -56,6 +99,12 @@ public class UserTypeController {
         return ResponseEntity.status(HttpStatus.CREATED).body(newUserTypeDTO);
     }
 
+    /**
+     * Удаляет тип пользователя по названию роли.
+     *
+     * @param role название роли (длина 3–100 символов, допустимые символы: буквы, цифры, пробелы, дефисы)
+     * @return {@link ResponseEntity} со статусом {@code 204 NO CONTENT}
+     */
     @Operation(summary = "Удалить данные тип юзера",
             description = "Удалить данные существующего тип юзера")
     @ApiResponse(responseCode = "204", description = "тип юзера Удален")
@@ -70,6 +119,12 @@ public class UserTypeController {
         return ResponseEntity.noContent().build();
     }
 
+    /**
+     * Обновляет данные существующего типа пользователя.
+     *
+     * @param userTypeDTO обновлённые данные типа (проходят валидацию)
+     * @return {@link ResponseEntity} с обновлённым {@link UserTypeDTO} и статусом {@code 200 OK}
+     */
     @Operation(summary = "Обновить данные типа юзера",
             description = "обновляет данные существующего типа юзера")
     @ApiResponse(responseCode = "200", description = "типа юзера обновлен")

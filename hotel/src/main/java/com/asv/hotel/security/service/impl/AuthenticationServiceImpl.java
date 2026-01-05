@@ -15,6 +15,21 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
+/**
+ * Реализация сервиса аутентификации с использованием JWT.
+ * <p>
+ * Обеспечивает:
+ * <ul>
+ *   <li>вход пользователя по логину и паролю с генерацией пары токенов (access + refresh);</li>
+ *   <li>обновление access-токена по валидному refresh-токену;</li>
+ *   <li>удаление токенов из хранилища при выходе из системы.</li>
+ * </ul>
+ * </p>
+ * <p>
+ * Управляет контекстом безопасности Spring и взаимодействует с внешним хранилищем токенов
+ * для поддержки инвалидации (например, при logout).
+ * </p>
+ */
 @Slf4j
 @RequiredArgsConstructor
 @Service
@@ -28,6 +43,22 @@ public class AuthenticationServiceImpl implements AuthenticationService {
 
     private final TokenStorageService tokenStorageService;
 
+    /**
+     * Выполняет аутентификацию пользователя и генерирует JWT-токены.
+     * <p>
+     * После успешной аутентификации:
+     * <ul>
+     *   <li>устанавливает аутентификацию в {@link SecurityContextHolder};</li>
+     *   <li>генерирует access и refresh токены;</li>
+     *   <li>инвалидирует предыдущие токены пользователя и сохраняет новый access-токен в хранилище.</li>
+     * </ul>
+     * </p>
+     *
+     * @param logIn    логин пользователя (обычно nickname)
+     * @param password пароль в открытом виде
+     * @return объект {@link JWTAuthentication} с парой токенов
+     * @throws HotelAuthenticationException если аутентификация не удалась
+     */
     @Override
     public JWTAuthentication signIn(String logIn, String password) {
 
@@ -49,7 +80,21 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         return new JWTAuthentication(accessToken, refreshToken);
     }
 
-
+    /**
+     * Обновляет access-токен с использованием refresh-токена.
+     * <p>
+     * Проверяет:
+     * <ul>
+     *   <li>валидность refresh-токена;</li>
+     *   <li>принадлежность токена пользователю (подпись и данные совпадают).</li>
+     * </ul>
+     * При успехе генерирует новый access-токен и сохраняет его в хранилище.
+     * </p>
+     *
+     * @param refreshToken валидный refresh-токен
+     * @return объект {@link JWTAuthentication} с новым access-токеном и исходным refresh-токеном
+     * @throws HotelAuthenticationException если токен недействителен или не принадлежит пользователю
+     */
     @Override
     public JWTAuthentication refreshAccessToken(String refreshToken) {
         try {
@@ -82,6 +127,15 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         }
     }
 
+    /**
+     * Удаляет access-токен из хранилища при выходе пользователя.
+     * <p>
+     * Извлекает токен из заголовка {@code Authorization} запроса (формат: {@code Bearer <token>}).
+     * Если заголовок отсутствует или имеет неверный формат — операция игнорируется.
+     * </p>
+     *
+     * @param request HTTP-запрос, содержащий access-токен в заголовке
+     */
     @Override
     public void removeTokensFromStorage(HttpServletRequest request) {
         // токен из заголовка

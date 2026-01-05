@@ -24,7 +24,29 @@ import org.springframework.web.bind.annotation.*;
 import java.io.Reader;
 import java.time.LocalDate;
 import java.util.List;
-
+/**
+ * Контроллер для управления бронированиями номеров в отеле.
+ * <p>
+ * Предоставляет RESTful эндпоинты для:
+ * <ul>
+ *   <li>создания нового бронирования;</li>
+ *   <li>удаления бронирования по идентификатору;</li>
+ *   <li>поиска всех бронирований по номеру комнаты;</li>
+ *   <li>поиска свободных комнат в заданный период;</li>
+ *   <li>получения детальной информации о бронировании по его ID.</li>
+ * </ul>
+ * </p>
+ * <p>
+ * Все входные параметры проходят валидацию с помощью аннотаций Jakarta Bean Validation.
+ * Контроллер интегрирован со Swagger/OpenAPI для автоматической генерации документации.
+ * </p>
+ *
+ * @see BookingService
+ * @see BookingSimplDTO
+ * @see BookingDTO
+ * @see ResponseBookingDTO
+ * @see RoomSimpleDataBaseDTO
+ */
 @RestController
 @RequestMapping("/bookings")
 @RequiredArgsConstructor
@@ -33,6 +55,13 @@ import java.util.List;
 public class BookingController {
     private final BookingService bookingService;
 
+    /**
+     * Создаёт новое бронирование на основе упрощённых данных.
+     *
+     * @param bookingSimplDTO DTO с информацией о бронировании (обязательное поле, проходит валидацию)
+     * @return {@link ResponseEntity} с полным объектом {@link BookingDTO} и статусом {@code 201 CREATED}
+     * @throws jakarta.validation.ValidationException если входные данные не прошли валидацию
+     */
     @Operation(summary = "Создать новое бронирование",
             description = "создает новое бронирование")
     @ApiResponse(responseCode = "201", description = "бронирование создано")
@@ -42,7 +71,13 @@ public class BookingController {
         return ResponseEntity.status(HttpStatus.CREATED).body(bookingService.createBooking(bookingSimplDTO));
     }
 
-
+    /**
+     * Удаляет бронирование по его уникальному идентификатору.
+     *
+     * @param id идентификатор бронирования (обязательный, должен быть положительным)
+     * @return {@link ResponseEntity} со статусом {@code 204 NO CONTENT} при успешном удалении
+     * @throws com.asv.hotel.exceptions.HotelEntityNotFoundException если бронирование с указанным ID не найдено
+     */
     @Operation(summary = "Удалить бронирование",
             description = "удаляет данные существующего бронирования по id")
     @ApiResponse(responseCode = "204", description = "бронирование удалено")
@@ -56,7 +91,13 @@ public class BookingController {
         return ResponseEntity.noContent().build();
     }
 
-
+    /**
+     * Возвращает список всех бронирований для комнаты с заданным номером.
+     *
+     * @param number номер комнаты (обязательный, непустой, содержит только буквы и цифры)
+     * @return {@link ResponseEntity} со списком {@link BookingSimplDTO} и статусом {@code 200 OK}
+     * @throws jakarta.validation.ConstraintViolationException если номер комнаты не соответствует формату
+     */
     @Operation(summary = "Найти бронирование по номеру комнаты",
             description = "Возвращает данные бронирования по номеру комнаты")
     @ApiResponse(responseCode = "200", description = "бронирования найдены")
@@ -69,12 +110,20 @@ public class BookingController {
             String number) {
         return ResponseEntity.ok(bookingService.findAllBookingsSimpleDTOByRoomNumber(number));
     }
-
+    /**
+     * Возвращает список свободных комнат в указанный период дат.
+     *
+     * @param checkin дата заезда (должна быть сегодняшней или в будущем)
+     * @param checkOut дата выезда (должна быть строго в будущем и позже даты заезда)
+     * @return {@link ResponseEntity} со списком {@link RoomSimpleDataBaseDTO} и статусом {@code 200 OK},
+     *         либо {@code 400 BAD REQUEST}, если свободных комнат нет
+     * @implNote В текущей реализации возвращается статус 400, если список пуст.
+     *          Возможно, логичнее вернуть пустой список со статусом 200.
+     */
     @Operation(summary = "Найти свободные комнаты по датам бронирования",
             description = "Возвращает список свободных комнат на заданные даты")
     @ApiResponse(responseCode = "200", description = "бронирования найдены")
     @ApiResponse(responseCode = "404", description = "бронирования не найдены")
-    // TODO : добавить ошибки
     @GetMapping("/date")
     public ResponseEntity<List<RoomSimpleDataBaseDTO>> getFreeRoomsBetweenDates(@RequestParam
                                                                                 @FutureOrPresent

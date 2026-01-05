@@ -18,7 +18,33 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.nio.charset.StandardCharsets;
-
+/**
+ * Контроллер для управления пользователями системы.
+ * <p>
+ * Обеспечивает операции:
+ * <ul>
+ *   <li>создания нового пользователя;</li>
+ *   <li>поиска по имени и фамилии;</li>
+ *   <li>поиска по номеру телефона (только для администраторов);</li>
+ *   <li>удаления по имени и фамилии;</li>
+ *   <li>обновления данных пользователя;</li>
+ *   <li>подтверждения регистрации по токену через HTML-страницу.</li>
+ * </ul>
+ * </p>
+ * <p>
+ * Все строковые входные параметры проходят строгую валидацию:
+ * <ul>
+ *   <li>Имя и фамилия — только русские буквы и дефисы, длина от 3 до 50 символов;</li>
+ *   <li>Номер телефона — только цифры, длина от 3 до 20 символов.</li>
+ * </ul>
+ * </p>
+ * <p>
+ * Доступ к некоторым эндпоинтам ограничен ролями (например, поиск по телефону доступен только ADMIN).
+ * </p>
+ *
+ * @see UserDTO
+ * @see UserService
+ */
 @RestController
 @RequestMapping("/users")
 @RequiredArgsConstructor
@@ -26,7 +52,12 @@ import java.nio.charset.StandardCharsets;
 @Tag(name = "User Management", description = "REST API для управления юзерами")
 public class UserController {
     private final UserService userService;
-
+    /**
+     * Создаёт нового пользователя на основе переданного DTO.
+     *
+     * @param userDTO данные нового пользователя (проходят валидацию)
+     * @return {@link ResponseEntity} с созданным {@link UserDTO} и статусом {@code 201 CREATED}
+     */
     @Operation(summary = "Создать нового юзера",
             description = "создает нового юзера")
     @ApiResponse(responseCode = "201", description = "юзера создан")
@@ -37,7 +68,13 @@ public class UserController {
         return ResponseEntity.status(HttpStatus.CREATED).body(newuserDTO);
     }
 
-
+    /**
+     * Возвращает пользователя по его фамилии и имени.
+     *
+     * @param lastName  фамилия (только русские буквы и дефисы, 3–50 символов)
+     * @param firstName имя (только русские буквы и дефисы, 3–50 символов)
+     * @return {@link ResponseEntity} с объектом {@link UserDTO} и статусом {@code 200 OK}
+     */
     @Operation(summary = "Получить по имени и фамилии",
             description = "Возвращает юзера")
     @ApiResponse(responseCode = "200", description = "Успешный запрос")
@@ -63,7 +100,14 @@ public class UserController {
         return ResponseEntity.ok(userService.findUserDTOByLastNameAndFirstName(lastName, firstName));
     }
 
-
+    /**
+     * Возвращает пользователя по номеру телефона.
+     * <p>
+     * Доступ разрешён только пользователям с ролью {@code ADMIN}.
+     *
+     * @param phoneNumber номер телефона (только цифры, 3–20 символов)
+     * @return {@link ResponseEntity} с объектом {@link UserDTO} и статусом {@code 200 OK}
+     */
     @Operation(summary = "Получить по номеру телефона",
             description = "Возвращает юзера")
     @ApiResponse(responseCode = "200", description = "Успешный запрос")
@@ -83,7 +127,13 @@ public class UserController {
         return ResponseEntity.ok(userService.findUserDTOByPhoneNumber(phoneNumber));
     }
 
-
+    /**
+     * Удаляет пользователя по фамилии и имени.
+     *
+     * @param lastName  фамилия (валидируется как русский текст)
+     * @param firstName имя (валидируется как русский текст)
+     * @return {@link ResponseEntity} со статусом {@code 204 NO CONTENT}
+     */
     @Operation(summary = "Удалите Юзер",
             description = "удаляет данные существующего Юзер по фамилии и имени ")
     @ApiResponse(responseCode = "204", description = "Юзер удален")
@@ -109,7 +159,12 @@ public class UserController {
         return ResponseEntity.noContent().build();
     }
 
-
+    /**
+     * Обновляет данные существующего пользователя.
+     *
+     * @param userDTO обновлённые данные пользователя (обязательные и валидные)
+     * @return {@link ResponseEntity} с обновлённым {@link UserDTO} и статусом {@code 200 OK}
+     */
     @Operation(summary = "обновить юзера ",
             description = "Возвращает обновленного юзера")
     @ApiResponse(responseCode = "200", description = "Успешный запрос")
@@ -118,7 +173,14 @@ public class UserController {
     public ResponseEntity<UserDTO> updateUser(@RequestBody @Valid UserDTO userDTO) {
         return ResponseEntity.ok(userService.changeDataUser(userDTO));
     }
-
+    /**
+     * Подтверждает регистрацию пользователя по токену.
+     * <p>
+     * Возвращает HTML-страницу с результатом подтверждения (успех или ошибка).
+     *
+     * @param token токен подтверждения, полученный по электронной почте
+     * @return {@link ResponseEntity} с HTML-контентом и типом {@code text/html;charset=UTF-8}
+     */
     @Operation(summary = "Подтвердить регистрацию юзера ",
             description = "Возвращает обновленного юзера")
     @ApiResponse(responseCode = "200", description = "Успешный запрос")

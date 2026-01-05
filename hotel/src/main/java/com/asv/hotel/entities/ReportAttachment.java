@@ -9,6 +9,20 @@ import org.springframework.data.annotation.CreatedDate;
 
 import java.time.LocalDateTime;
 
+/**
+ * Сущность вложения (файла), прикреплённого к отчёту.
+ * <p>
+ * Хранит бинарное содержимое файла вместе с метаданными:
+ * именем, MIME-типом, размером и привязкой к отчёту.
+ * </p>
+ * <p>
+ * Используется для хранения изображений, сканов или других документов,
+ * связанных с инцидентами или запросами в системе отеля.
+ * </p>
+ * <p>
+ * Поддерживает автоматическую установку временной метки создания.
+ * </p>
+ */
 @Entity
 @Table(name = "report_attachments")
 @Getter
@@ -18,26 +32,55 @@ import java.time.LocalDateTime;
 @Builder
 public class ReportAttachment {
 
+    /**
+     * Уникальный идентификатор вложения.
+     * Генерируется автоматически базой данных.
+     */
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "file_name",nullable = false,length = 30)
+    /**
+     * Имя файла (без пути). Например: "photo.jpg".
+     * Обязательное поле, до 30 символов.
+     */
+    @Column(name = "file_name", nullable = false, length = 30)
     private String fileName;
 
-    @Column(name = "content_type",nullable = false,length = 30)
+    /**
+     * MIME-тип содержимого файла. Например: "image/jpeg", "application/pdf".
+     * Обязательное поле, до 30 символов.
+     */
+    @Column(name = "content_type", nullable = false, length = 30)
     private String contentType;
 
-    @Column(name = "size",nullable = false,length = 20)
+    /**
+     * Размер файла в байтах.
+     * Обязательное поле.
+     */
+    @Column(name = "size", nullable = false, length = 20)
     private Long size;
 
-    @Column(name = "content",nullable = false)
+    /**
+     * Бинарное содержимое файла.
+     * Хранится напрямую в БД (например, в колонке типа BYTEA или BLOB).
+     * Обязательное поле.
+     */
+    @Column(name = "content", nullable = false)
     private byte[] content;
 
+    /**
+     * Дата и время загрузки вложения.
+     * Устанавливается автоматически при сохранении и не изменяется впоследствии.
+     */
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
 
+    /**
+     * Отчёт, к которому прикреплено вложение.
+     * Обязательная связь "много-к-одному". Загружается лениво (LAZY).
+     */
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "report_id", nullable = false)
     private Report report;

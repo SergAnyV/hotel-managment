@@ -16,7 +16,20 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-
+/**
+ * Контроллер для управления аутентификацией пользователей через JWT.
+ * <p>
+ * Обеспечивает:
+ * <ul>
+ *   <li>вход в систему с получением пары токенов (access + refresh);</li>
+ *   <li>обновление access-токена с использованием refresh-токена;</li>
+ *   <li>выход из системы с инвалидацией токенов.</li>
+ * </ul>
+ * </p>
+ * <p>
+ * Все эндпоинты защищены от CSRF по умолчанию (в рамках Spring Security + JWT).
+ * </p>
+ */
 @RequiredArgsConstructor
 @RestController
 @RequestMapping("/auth")
@@ -25,6 +38,15 @@ public class AuthController {
 
     private final AuthenticationService authenticationService;
 
+    /**
+     * Выполняет аутентификацию пользователя по nickname и паролю.
+     * <p>
+     * В случае успеха возвращает пару JWT-токенов: краткосрочный access-токен и долгосрочный refresh-токен.
+     * </p>
+     *
+     * @param request DTO с учетными данными ({@code nickName}, {@code password})
+     * @return {@link ResponseEntity} с объектом {@link JWTAuthentication}, содержащим токены
+     */
     @Operation(
             summary = "Вход в систему",
             description = "Аутентификация пользователя и получение access и refresh токенов"
@@ -44,7 +66,15 @@ public class AuthController {
         return ResponseEntity.ok(response);
     }
 
-
+    /**
+     * Обновляет access-токен с использованием валидного refresh-токена.
+     * <p>
+     * Требуется передать действующий refresh-токен. В ответе возвращается новая пара токенов.
+     * </p>
+     *
+     * @param refreshTokenRequest DTO с refresh-токеном
+     * @return {@link ResponseEntity} с новым объектом {@link JWTAuthentication}
+     */
     @Operation(
             summary = "Обновление access токена",
             description = "Получение нового access токена по валидному refresh токену")
@@ -63,7 +93,17 @@ public class AuthController {
         return ResponseEntity.ok(response);
     }
 
-
+    /**
+     * Выполняет выход из системы.
+     * <p>
+     * Удаляет связку токенов (access + refresh) из хранилища (например, Redis или in-memory map),
+     * что делает их недействительными до истечения срока жизни.
+     * Для идентификации токенов используется информация из HTTP-запроса (например, заголовки).
+     * </p>
+     *
+     * @param request текущий HTTP-запрос, содержащий токены
+     * @return {@link ResponseEntity} со статусом {@code 200 OK}
+     */
     @Operation(
             summary = "Выход из системы",
             description = "Завершение сессии пользователя и удаление токенов из хранилища")
