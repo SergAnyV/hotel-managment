@@ -14,7 +14,8 @@ services:
     volumes:
       - postgres_:/var/lib/postgresql/data
 #      - убрано ,так как при запуске первым запускается развертывание бд, а потом создание таблиц,таблицы создаются
-#        через Hibernate , каждого приложения, и загружаются оттуда
+#        через Hibernate , каждого приложения, и загружаются оттуда, если нужно создать все таблицы при запуске то добавить файлы
+#        в папку указанную ниже.
 #      - ./docker/postgres:/docker-entrypoint-initdb.d
     networks:
       - hotel-network
@@ -64,6 +65,19 @@ services:
       timeout: 10s
       retries: 3
 
+#  mail:
+#    image: bytemark/smtp
+#    container_name: mail-server
+#    restart: always
+#    environment:
+#      RELAY_HOST: ${MAIL_SMTP}
+#      RELAY_PORT: ${MAIL_PORT}
+#      RELAY_USERNAME: ${MAIL_USERNAME}
+#      RELAY_PASSWORD: ${MAIL_PASSWORD}
+#    networks:
+#      - hotel-network
+
+
   # Hotel Service
   hotel:
     build:
@@ -90,6 +104,8 @@ services:
         condition: service_healthy
       postgres-db:
         condition: service_healthy
+      discovery-service:
+        condition: service_healthy
     networks:
       - hotel-network
     healthcheck:
@@ -97,6 +113,8 @@ services:
       interval: 10s
       timeout: 10s
       retries: 3
+    volumes:
+      - ./logs:/app/logs
 
   # Telegram Service
   tg-service:
@@ -112,9 +130,7 @@ services:
       TG_TOKEN: ${TG_TOKEN}
       TG_BOT_NAME: ${TG_BOT_NAME}
     depends_on:
-      config-service:
-        condition: service_healthy
-      postgres-db:
+      hotel:
         condition: service_healthy
     networks:
       - hotel-network
@@ -123,6 +139,8 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
+    volumes:
+      - ./logs:/app/logs
 
 networks:
   hotel-network:
