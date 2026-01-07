@@ -72,18 +72,34 @@ public interface HotelClientFeign {
                                                                          @RequestParam
                                                                          String checkOut);
 
+    /**
+     * Feign эндпоинт для обновления данных пользователя.
+     * Требует авторизации.
+     */
     @AuthHeaderFeign
     @PutMapping("/users")
     ResponseEntity<UserDTO> updateUser(@RequestBody UserDTO userDTO);
 
+    /**
+     * Feign эндпоинт для создания бронирования.
+     * Требует авторизации.
+     */
     @AuthHeaderFeign
     @PostMapping("/bookings")
     ResponseEntity<BookingDTO> createBooking(@RequestBody BookingSimplDTO bookingSimplDTO);
 
+    /**
+     * Feign эндпоинт для удаления бронирования.
+     * Требует авторизации.
+     */
     @AuthHeaderFeign
     @DeleteMapping("/bookings/delete/{id}")
     ResponseEntity<Void> deleteById(@PathVariable String id);
 
+    /**
+     * Feign эндпоинт для получения данных о бронирование.
+     * Требует авторизации.
+     */
     @AuthHeaderFeign
     @GetMapping("/bookings/booking/{bookingid}")
     ResponseEntity<ResponseBookingDTO> getBookingById(@PathVariable("bookingid") String id);

@@ -1,6 +1,7 @@
 package com.asv.feign;
 
 import com.asv.repositories.ChatEntityRepository;
+import com.asv.services.StringText;
 import feign.RequestInterceptor;
 import feign.RequestTemplate;
 import lombok.RequiredArgsConstructor;
@@ -31,7 +32,7 @@ public class HotelClientInterceptor implements RequestInterceptor {
         if (shouldAddInterceptorChatIdToken(requestTemplate)) {
             try {
                 String token = chatEntityRepository.findTokenByChatId(chatId).orElseThrow(() -> new RuntimeException());
-                requestTemplate.header("Authorization", "Bearer " + token);
+                requestTemplate.header(StringText.AUTHORIZATION, StringText.BEARER + token);
             } catch (Exception e) {
                 log.warn("Токен не найден для chatId={}, но требуется авторизация", chatId);
             }

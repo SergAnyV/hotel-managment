@@ -94,4 +94,7 @@ public final class StringText {
     public static final String ENTER_PROMO_CODE = "Введите промокод, если знаете, в противном случае введите 'НЕТ'";
     public static final String ENTER_SERVICES = "Введите название сервисов через запятую ','  , если вам не нужны дополнительные платные сервисы просто напишите 'НЕТ'";
 
+
+    public static final String BEARER ="Bearer ";
+    public static final String AUTHORIZATION ="Authorization";
 }
