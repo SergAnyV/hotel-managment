@@ -30,7 +30,29 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
-
+/**
+ * Реализация сервиса управления бронированиями.
+ * <p>
+ * Обеспечивает:
+ * <ul>
+ *   <li>создание бронирования с расчётом стоимости (с учётом промокодов и доп. услуг);</li>
+ *   <li>удаление бронирования (с учётом прав доступа: пользователь, менеджер, админ);</li>
+ *   <li>поиск бронирований по номеру комнаты;</li>
+ *   <li>поиск свободных комнат на заданные даты;</li>
+ *   <li>получение детальной информации о бронировании (с учётом прав доступа).</li>
+ * </ul>
+ * </p>
+ * <p>
+ * При создании бронирования:
+ * <ul>
+ *   <li>проверяется доступность номера на указанные даты;</li>
+ *   <li>валидируется количество гостей против вместимости номера;</li>
+ *   <li>применяется активный промокод (если указан);</li>
+ *   <li>рассчитывается итоговая стоимость;</li>
+ *   <li>создаётся уведомление о бронировании.</li>
+ * </ul>
+ * </p>
+ */
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -43,7 +65,18 @@ public class BookingServiceImpl implements BookingService {
     private final PromoCodeInternalService promoCodeInternalService;
     private final NotificationHotelService notificationHotelService;
 
-
+    /**
+     * Создаёт новое бронирование на основе упрощённых данных.
+     * <p>
+     * Извлекает текущего пользователя из контекста безопасности.
+     * Проверяет доступность номера, вместимость, применяет промокод и рассчитывает итоговую стоимость.
+     * </p>
+     *
+     * @param bookingSimplDTO данные для создания бронирования
+     * @return DTO с полной информацией о созданном бронировании
+     * @throws HotelIncorrectInputData если данные некорректны (например, гостей больше вместимости)
+     * @throws HotelDataNotFoundException если номер или промокод не найдены
+     */
     @Transactional
     public BookingDTO createBooking(BookingSimplDTO bookingSimplDTO) {
         Booking booking = BookingMapper.INSTANCE.bookingSimpleDTOToBooking(bookingSimplDTO);
@@ -86,6 +119,19 @@ public class BookingServiceImpl implements BookingService {
         return BookingMapper.INSTANCE.bookingToBookingDTO(savedBooking);
     }
 
+    /**
+     * Удаляет бронирование по ID с учётом прав доступа:
+     * <ul>
+     *   <li>Администратор и менеджер — могут удалить любое бронирование;</li>
+     *   <li>Обычный пользователь — только своё.</li>
+     * </ul>
+     * <p>
+     * Перед удалением очищаются связи с гостями и доп. услугами.
+     * </p>
+     *
+     * @param id идентификатор бронирования
+     * @throws HotelDataNotFoundException если бронирование не найдено или недоступно для удаления
+     */
     @Transactional
     public void deleteBookingById(Long id) {
         User user = (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
@@ -106,6 +152,13 @@ public class BookingServiceImpl implements BookingService {
         }
     }
 
+    /**
+     * Возвращает все бронирования, связанные с указанным номером комнаты.
+     *
+     * @param roomNumber текстовый номер комнаты (например: "101", "ЛЮКС-3")
+     * @return список упрощённых DTO бронирований
+     * @throws HotelDataNotFoundException если бронирования не найдены
+     */
     @Transactional
     public List<BookingSimplDTO> findAllBookingsSimpleDTOByRoomNumber(String roomNumber) {
         List<Booking> bookingsList = bookingRepository.findAllByRoomNumber(roomNumber);
@@ -118,6 +171,17 @@ public class BookingServiceImpl implements BookingService {
                 .toList();
     }
 
+    /**
+     * Возвращает список свободных номеров на заданный период.
+     * <p>
+     * Проверяет корректность дат: дата выезда должна быть строго после даты заезда.
+     * </p>
+     *
+     * @param checkInDate  дата заезда
+     * @param checkOutDate дата выезда
+     * @return список DTO свободных номеров
+     * @throws HotelIncorrectInputData если даты указаны некорректно
+     */
     @Transactional
     @Override
     public List<RoomSimpleDataBaseDTO> findRoomSimpleDataBaseDTOByBookingDate(LocalDate checkInDate, LocalDate checkOutDate) {
@@ -130,6 +194,17 @@ public class BookingServiceImpl implements BookingService {
         return bookingRepository.findAllFreeRoomsBetweenDates(checkInDate, checkOutDate);
     }
 
+    /**
+     * Возвращает детальную информацию о бронировании по ID с учётом прав доступа:
+     * <ul>
+     *   <li>Администратор и менеджер — видят любое бронирование;</li>
+     *   <li>Обычный пользователь — только своё.</li>
+     * </ul>
+     *
+     * @param id идентификатор бронирования
+     * @return DTO с полной информацией о бронировании
+     * @throws HotelDataNotFoundException если бронирование не найдено или недоступно
+     */
     @Transactional
     public ResponseBookingDTO findResponseBookingDTOByBookingId(Long id) {
 
@@ -145,6 +220,17 @@ public class BookingServiceImpl implements BookingService {
         }
 
     }
+
+    // === Приватные вспомогательные методы ===
+
+    /**
+     * Формирует DTO с полной информацией о бронировании.
+     *
+     * @param booking бронирование
+     * @param id      идентификатор (для сообщения об ошибке, если booking == null)
+     * @return DTO с данными о бронировании, пользователе, номере и услугах
+     * @throws HotelDataNotFoundException если booking == null
+     */
 
     private ResponseBookingDTO getResponseBookingDTO(Booking booking, Long id) {
         if (booking == null) {
@@ -176,6 +262,12 @@ public class BookingServiceImpl implements BookingService {
                 .build();
     }
 
+    /**
+     * Находит все дополнительные сервисы, указанные в запросе на бронирование.
+     *
+     * @param bookingSimplDTO исходный DTO с перечнем услуг
+     * @return множество сущностей {@link ServiceHotel}
+     */
     private Set<ServiceHotel> findAllServicesForBooking(BookingSimplDTO bookingSimplDTO) {
         Set<ServiceHotelSimpleDTO> serviceHotelDTOS = bookingSimplDTO.getServiceSet();
         if (serviceHotelDTOS==null||serviceHotelDTOS.isEmpty()) {
@@ -186,6 +278,20 @@ public class BookingServiceImpl implements BookingService {
         }).collect(Collectors.toSet());
     }
 
+    /**
+     * Рассчитывает итоговую стоимость бронирования с учётом промокода.
+     * <p>
+     * Поддерживает два типа скидок:
+     * <ul>
+     *   <li>{@code FIXED} — фиксированная сумма;</li>
+     *   <li>{@code PERCENT} — процент (ошибка в текущей реализации: расчёт некорректен).</li>
+     * </ul>
+     * </p>
+     *
+     * @param totalPrice итоговая стоимость без промокода
+     * @param promoCode  промокод (может быть null)
+     * @return стоимость с учётом скидки
+     */
     private BigDecimal calculateTotalPriceWithPromoCode(BigDecimal totalPrice, PromoCode promoCode) {
         if (promoCode == null) {
             return totalPrice;
@@ -199,6 +305,13 @@ public class BookingServiceImpl implements BookingService {
         };
     }
 
+    /**
+     * Проверяет доступность номера на указанные даты.
+     *
+     * @param bookingSimplDTO данные бронирования
+     * @return сущность {@link Room}, если номер доступен
+     * @throws HotelDataNotFoundException если номер не найден или занят
+     */
     private Room findRoomForBooking(BookingSimplDTO bookingSimplDTO) {
         Room room = roomInternalService.findRoomByNumber(bookingSimplDTO.getRoomNumber());
         if (room == null || (Boolean.TRUE.equals(room.getIsAvailable()) && !bookingRepository.isRoomAvailableForDates(room.getId(),
@@ -210,12 +323,22 @@ public class BookingServiceImpl implements BookingService {
         return room;
     }
 
+    /**
+     * Рассчитывает стоимость дополнительных услуг за период проживания.
+     * @return суммарная стоимость услуг
+     */
     private User findUserForBooking(BookingSimplDTO bookingSimplDTO) {
         User user = userService.findUserByLastNameAndFirstName(
                 bookingSimplDTO.getUserSimpleDTO().getLastName(), bookingSimplDTO.getUserSimpleDTO().getFirstName());
         return user;
     }
 
+    /**
+     * Рассчитывает базовую стоимость (номер + услуги) без учёта промокода.
+     *
+     * @param livingDays             количество дней проживания
+     * @return общая стоимость без скидки
+     */
     private BigDecimal calculatePriceForServices(Set<ServiceHotel> serviceHotels, BigDecimal livingDays) {
         if (!serviceHotels.isEmpty()) {
             return serviceHotels.stream().map(serviceHotelentity -> {
@@ -230,6 +353,10 @@ public class BookingServiceImpl implements BookingService {
         }
     }
 
+    /**
+     * Применяет промокод к итоговой стоимости.
+     * @return стоимость с учётом промокода
+     */
     private BigDecimal calculateTtalPriceWithoutPromoCode(Room room, BigDecimal livingDays, BigDecimal totalPriceForServices) {
         return room.getPricePerNight()
                 .multiply(livingDays).add(totalPriceForServices);

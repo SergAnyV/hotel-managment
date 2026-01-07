@@ -24,6 +24,21 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+/**
+ * Реализация сервиса управления типами должностей сотрудников ({@link JobType}).
+ * <p>
+ * Обеспечивает:
+ * <ul>
+ *   <li>создание, поиск, обновление и удаление типов должностей;</li>
+ *   <li>работу с привязкой ролей пользователей ({@link UserType}) к должностям;</li>
+ *   <li>поиск по названию с поддержкой регистра и статуса активности.</li>
+ * </ul>
+ * </p>
+ * <p>
+ * Все входные строковые параметры автоматически приводятся к нижнему регистру и очищаются от пробелов
+ * с помощью вспомогательного метода {@link #cleanString(String)}.
+ * </p>
+ */
 @Slf4j
 @RequiredArgsConstructor
 @Service
@@ -31,6 +46,12 @@ public class JobTypeServiceImpl implements JobTypeInternalService {
     private final JobTypeRepository jobTypeRepository;
     private final UserTypeInternalService userTypeInternalService;
 
+
+    /**
+     * Возвращает список всех типов должностей с инициализированными связями с ролями пользователей.
+     *
+     * @return список DTO всех типов должностей
+     */
     @Transactional
     @Override
     public List<JobTypeDTO> findAll() {
@@ -43,6 +64,17 @@ public class JobTypeServiceImpl implements JobTypeInternalService {
                 .collect(Collectors.toList());
     }
 
+    /**
+     * Создаёт новый тип должности.
+     * <p>
+     * Новый тип автоматически помечается как активный ({@code isActive = true}).
+     * В случае нарушения уникальности (например, дубликат названия) выбрасывается исключение.
+     * </p>
+     *
+     * @param jobTypeSimpleDTO данные для создания типа должности
+     * @return DTO созданного типа
+     * @throws HotelDataAlreadyExistsException если тип с таким названием уже существует
+     */
     @Transactional
     @Override
     public JobTypeDTO createJobType(JobTypeSimpleDTO jobTypeSimpleDTO) {
@@ -60,6 +92,12 @@ public class JobTypeServiceImpl implements JobTypeInternalService {
         }
     }
 
+    /**
+     * Находит все типы должностей, название которых содержит указанную строку (регистронезависимо).
+     *
+     * @param title часть или полное название должности
+     * @return список DTO найденных типов
+     */
     @Transactional
     @Override
     public List<JobTypeDTO> findJobTypesDTOByTitle(String title) {
@@ -72,6 +110,12 @@ public class JobTypeServiceImpl implements JobTypeInternalService {
 
     }
 
+    /**
+     * Находит все активные типы должностей, название которых содержит указанную строку (регистронезависимо).
+     *
+     * @param title часть или полное название должности
+     * @return список DTO активных типов
+     */
     @Transactional
     @Override
     public List<JobType> findJobTypesByTitle(String title) {
@@ -82,6 +126,12 @@ public class JobTypeServiceImpl implements JobTypeInternalService {
 
     }
 
+    /**
+     * Находит типы должностей по названию и статусу активности.
+     *
+     * @param title     часть или полное название должности
+     * @return список DTO типов, соответствующих критериям
+     */
     @Transactional
     @Override
     public List<JobTypeDTO> findActiveJobTypesDTOByTitle(String title) {
@@ -94,6 +144,11 @@ public class JobTypeServiceImpl implements JobTypeInternalService {
 
     }
 
+    /**
+     * Находит типы должностей по названию и статусу активности.
+     *
+     * @param title     часть или полное название должности
+     */
     @Transactional
     @Override
     public List<JobType> findActiveJobTypesByTitle(String title) {
@@ -104,6 +159,12 @@ public class JobTypeServiceImpl implements JobTypeInternalService {
 
     }
 
+    /**
+     * Находит типы должностей по названию и статусу активности.
+     *
+     * @param title     часть или полное название должности
+     * @return список DTO типов, соответствующих критериям
+     */
     @Transactional
     @Override
     public List<JobTypeDTO> findJobTypesDTOByTitleAndActiveStatusWithoutUserType(String title, String isActive) {
@@ -118,6 +179,11 @@ public class JobTypeServiceImpl implements JobTypeInternalService {
 
     }
 
+    /**
+     * Находит типы должностей по названию и статусу активности.
+     *
+     * @param title     часть или полное название должности
+     */
     @Transactional
     @Override
     public List<JobType> findJobTypesByTitleAndActiveStatusWithoutUserType(String title, String isActive) {
@@ -128,6 +194,12 @@ public class JobTypeServiceImpl implements JobTypeInternalService {
 
     }
 
+    /**
+     * Удаляет тип должности по уникальному идентификатору.
+     *
+     * @param id идентификатор типа
+     * @throws HotelDataNotFoundException если тип с указанным ID не найден
+     */
     @Transactional
     @Override
     public void deleteJobTypeById(Long id) {
@@ -138,6 +210,12 @@ public class JobTypeServiceImpl implements JobTypeInternalService {
 
     }
 
+    /**
+     * Удаляет тип должности по названию (регистронезависимо).
+     *
+     * @param title название типа
+     * @throws HotelDataNotFoundException если тип с указанным названием не найден
+     */
     @Transactional
     public void deleteJobTypeByTitle(String title) {
         if (jobTypeRepository.deleteJobTypeByTitleIgnoreCase(title) == 0) {
@@ -146,6 +224,14 @@ public class JobTypeServiceImpl implements JobTypeInternalService {
         }
     }
 
+    /**
+     * Обновляет описание и статус активности типа должности по названию.
+     *
+     * @param title       точное название типа (регистрозависимо)
+     * @param description новое описание
+     * @param status      строковое представление нового статуса ("true"/"false")
+     * @throws HotelDataNotFoundException если обновление не затронуло ни одной записи
+     */
     @Transactional
     public void updateJobTypesDescriptionAndActiveStatusByTitle(String title, String description, String status) {
         Boolean statusB = Boolean.valueOf(status);
@@ -154,13 +240,29 @@ public class JobTypeServiceImpl implements JobTypeInternalService {
         }
     }
 
+    /**
+     * Привязывает роль пользователя к типу должности.
+     * <p>
+     * Добавляет указанную роль в набор ролей, которые могут занимать данную должность.
+     * </p>
+     *
+     * @param jobTypeTitle название типа должности
+     * @param userTypeRole название роли пользователя
+     * @return множество DTO ролей, привязанных к должности после обновления
+     * @throws IndexOutOfBoundsException если тип должности не найден (используется {@code .get(0)})
+     */
     @Transactional
     public Set<UserTypeDTO> addUserTypeToJobType(String jobTypeTitle, String userTypeRole) {
 
         jobTypeTitle = cleanString(jobTypeTitle);
         userTypeRole = cleanString(userTypeRole);
 
-        JobType jobType = jobTypeRepository.findJobTypesByTitleIgnoreCase(jobTypeTitle).get(0);
+        List<JobType> list = jobTypeRepository.findJobTypesByTitleIgnoreCase(jobTypeTitle);
+        if (list.isEmpty()) {
+            throw new HotelDataNotFoundException("JobType not found: " + jobTypeTitle);
+        }
+        JobType jobType = list.get(0);
+
         Set<UserType> userTypeSet = jobType.getUserTypes();
         UserType userType = userTypeInternalService.findActiveUserTypeByType(userTypeRole);
         userTypeSet.add(userType);
@@ -169,7 +271,12 @@ public class JobTypeServiceImpl implements JobTypeInternalService {
                 .collect(Collectors.toSet());
     }
 
-
+    /**
+     * Очищает строку: удаляет пробелы по краям и приводит к нижнему регистру.
+     *
+     * @param line исходная строка
+     * @return очищенная строка
+     */
     private String cleanString(String line) {
         return line.trim().toLowerCase();
     }

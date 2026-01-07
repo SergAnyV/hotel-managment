@@ -18,6 +18,23 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.UUID;
 
+/**
+ * Реализация сервиса управления пользователями.
+ * <p>
+ * Обеспечивает:
+ * <ul>
+ *   <li>регистрацию новых пользователей с отправкой email для подтверждения;</li>
+ *   <li>поиск пользователей по ФИО, телефону, nickname;</li>
+ *   <li>удаление пользователей по ФИО;</li>
+ *   <li>обновление данных пользователя;</li>
+ *   <li>подтверждение регистрации по токену.</li>
+ * </ul>
+ * </p>
+ * <p>
+ * Новые пользователи автоматически получают статус "не подтверждён" и уникальный токен верификации.
+ * Если указанная роль не найдена, пользователь создаётся с ролью по умолчанию ("клиент").
+ * </p>
+ */
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -29,9 +46,21 @@ public class UserServiceImpl implements UserInternalService {
     private static final Boolean VERIFICATION_STATUS_FALSE = Boolean.FALSE;
     private static final Boolean VERIFICATION_STATUS_TRUE = Boolean.TRUE;
     private static final String REGISTRATION_SUBJECT = "Registration mail";
-    private static final String URL_REGISTRATION_USER="http://localhost:8083/users/verify?token=";
-    private static final String CLIENT="клиент";
+    private static final String URL_REGISTRATION_USER = "http://localhost:8083/users/verify?token=";
+    private static final String CLIENT = "клиент";
 
+    /**
+     * Создаёт нового пользователя и отправляет email для подтверждения регистрации.
+     * <p>
+     * Перед созданием проверяется, не существует ли пользователь с таким же ФИО.
+     * Если роль из DTO не найдена — используется роль по умолчанию ("клиент").
+     * Пользователь помечается как неподтверждённый и получает уникальный токен.
+     * </p>
+     *
+     * @param userDTO данные нового пользователя
+     * @return DTO созданного пользователя (без подтверждения регистрации)
+     * @throws HotelDataAlreadyExistsException если пользователь с таким ФИО уже существует
+     */
     @Transactional
     public UserDTO createUser(UserDTO userDTO) {
 
@@ -50,7 +79,7 @@ public class UserServiceImpl implements UserInternalService {
         user.setType(userType);
         user.setVerifyStatus(VERIFICATION_STATUS_FALSE);
 
-        String token= generateRandomToken();
+        String token = generateRandomToken();
         user.setVerificationToken(token);
 
         User savedUser = userRepository.save(user);
@@ -61,26 +90,63 @@ public class UserServiceImpl implements UserInternalService {
         return UserMapper.INSTANCE.userToUserDTO(savedUser);
     }
 
+    /**
+     * Находит пользователя по фамилии и имени.
+     *
+     * @param lastName  фамилия
+     * @param firstName имя
+     * @return DTO пользователя или {@code null}, если не найден
+     */
     @Transactional
     public UserDTO findUserDTOByLastNameAndFirstName(String lastName, String firstName) {
         return UserMapper.INSTANCE.userToUserDTO(
                 userRepository.findUserByLastNameAndFirstName(lastName, firstName).orElse(null));
     }
 
+    /**
+     * Находит сущность пользователя по фамилии и имени.
+     *
+     * @param lastName  фамилия
+     * @param firstName имя
+     * @return сущность {@link User} или {@code null}, если не найдена
+     */
     @Override
     public User findUserByLastNameAndFirstName(String lastName, String firstName) {
         return userRepository.findUserByLastNameAndFirstName(lastName, firstName).orElse(null);
     }
 
+    /**
+     * Находит сущность пользователя по уникальному nickname.
+     *
+     * @param nickName nickname (логин)
+     * @return сущность {@link User} или {@code null}, если не найдена
+     */
     @Override
     public User findUserByNickName(String nickName) {
         return userRepository.findUserByNickName(nickName).orElse(null);
     }
 
+    /**
+     * Возвращает тип пользователя (роль), связанный с пользователем по его nickname.
+     *
+     * @param nickName nickname пользователя
+     * @return сущность {@link UserType} или {@code null}, если не найдена
+     */
     @Override
     public UserType findUserTypeByUserNickName(String nickName) {
         return userRepository.findUserTypeByUserNickName(nickName).orElse(null);
     }
+
+    /**
+     * Удаляет пользователя по фамилии и имени.
+     * <p>
+     * ⚠️ Удаление выполняется по частичному совпадению (ILIKE), что может затронуть несколько записей.
+     * </p>
+     *
+     * @param lastName  фамилия
+     * @param firstName имя
+     * @throws HotelDataNotFoundException если пользователь не найден
+     */
     // TODO : переделать для админа и менеджера для изменений см. репорт сервисы
     @Transactional
     public void deleteUserByLastNameAndFirstName(String lastName, String firstName) {
@@ -90,11 +156,28 @@ public class UserServiceImpl implements UserInternalService {
         }
     }
 
+    /**
+     * Находит пользователя по номеру телефона.
+     *
+     * @param phoneNumber номер телефона (или его часть)
+     * @return DTO пользователя или {@code null}, если не найден
+     */
     @Transactional
     public UserDTO findUserDTOByPhoneNumber(String phoneNumber) {
         return UserMapper.INSTANCE.userToUserDTO(userRepository.findUserByPhoneNumber(phoneNumber).orElse(null));
     }
 
+    /**
+     * Обновляет данные существующего пользователя.
+     * <p>
+     * Пользователь идентифицируется по фамилии и имени.
+     * Обновление включает смену роли через {@link UserTypeService}.
+     * </p>
+     *
+     * @param userDTO обновлённые данные пользователя
+     * @return DTO обновлённого пользователя
+     * @throws HotelDataNotFoundException если пользователь не найден
+     */
     @Transactional
     public UserDTO changeDataUser(UserDTO userDTO) {
         User existingUser = userRepository.findUserByLastNameAndFirstName(userDTO.getLastName(), userDTO.getFirstName())
@@ -104,10 +187,19 @@ public class UserServiceImpl implements UserInternalService {
         return UserMapper.INSTANCE.userToUserDTO(existingUser);
     }
 
+    /**
+     * Подтверждает регистрацию пользователя по токену верификации.
+     * <p>
+     * Если токен найден — статус пользователя меняется на "подтверждён".
+     * </p>
+     *
+     * @param token токен подтверждения из email
+     * @return {@code true}, если подтверждение успешно; {@code false}, если токен недействителен
+     */
     @Transactional
-    public Boolean confirmRegistrationUser(String token){
-        User user=userRepository.findUserByToken(token).orElse(null);
-        if(user==null){
+    public Boolean confirmRegistrationUser(String token) {
+        User user = userRepository.findUserByToken(token).orElse(null);
+        if (user == null) {
             return VERIFICATION_STATUS_FALSE;
         }
         user.setVerifyStatus(VERIFICATION_STATUS_TRUE);

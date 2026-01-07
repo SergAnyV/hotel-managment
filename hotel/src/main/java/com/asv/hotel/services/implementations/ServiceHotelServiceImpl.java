@@ -16,12 +16,30 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+/**
+ * Реализация сервиса управления дополнительными сервисами отеля.
+ * <p>
+ * Обеспечивает:
+ * <ul>
+ *   <li>получение списка всех сервисов;</li>
+ *   <li>поиск сервиса по названию (регистронезависимо, точное совпадение);</li>
+ *   <li>создание нового сервиса с проверкой уникальности названия;</li>
+ *   <li>обновление данных существующего сервиса;</li>
+ *   <li>удаление сервиса по названию.</li>
+ * </ul>
+ * </p>
+ */
 @Service
 @RequiredArgsConstructor
 @Slf4j
 public class ServiceHotelServiceImpl implements ServiceHotelInternalService {
     private final ServiceHotelRepository serviceHotelRepository;
 
+    /**
+     * Возвращает список всех дополнительных сервисов отеля.
+     *
+     * @return список DTO всех сервисов; пустой список, если сервисы отсутствуют
+     */
     @Transactional
     public List<ServiceHotelDTO> findAllHotelServices() {
         return serviceHotelRepository.findAll().stream().map(service ->
@@ -29,6 +47,12 @@ public class ServiceHotelServiceImpl implements ServiceHotelInternalService {
         ).collect(Collectors.toList());
     }
 
+    /**
+     * Находит сервис по названию (точное совпадение, регистронезависимо).
+     *
+     * @param title название сервиса
+     * @return DTO сервиса или {@code null}, если не найден
+     */
     @Transactional
     public ServiceHotelDTO findServiceHotelDTOByTitle(String title) {
 
@@ -40,6 +64,17 @@ public class ServiceHotelServiceImpl implements ServiceHotelInternalService {
         return ServiceHotelMapper.INSTANCE.serviceToServiceDTO(serviceOptional.get());
     }
 
+    /**
+     * Создаёт новый дополнительный сервис.
+     * <p>
+     * Перед сохранением проверяется, не существует ли сервис с таким названием.
+     * Если существует — выбрасывается исключение.
+     * </p>
+     *
+     * @param serviceHotelDTO данные нового сервиса
+     * @return DTO созданного сервиса
+     * @throws HotelDataAlreadyExistsException если сервис с таким названием уже существует
+     */
     @Transactional
     public ServiceHotelDTO createServiceHotel(ServiceHotelDTO serviceHotelDTO) {
         if (serviceHotelRepository.findByTitle(serviceHotelDTO.getTitle()).isPresent()) {
@@ -51,6 +86,16 @@ public class ServiceHotelServiceImpl implements ServiceHotelInternalService {
                         ServiceHotelMapper.INSTANCE.serviceDTOToService(serviceHotelDTO)));
     }
 
+    /**
+     * Удаляет сервис по названию (точное совпадение, регистрозависимо).
+     * <p>
+     * ⚠️ Обратите внимание: в репозитории используется точное сравнение ({@code =}),
+     * в отличие от поиска, который использует {@code ILIKE}.
+     * </p>
+     *
+     * @param title название сервиса
+     * @throws HotelDataNotFoundException если сервис с указанным названием не найден
+     */
     @Transactional
     public void deletServiceHotelByTtitle(String title) {
         if (serviceHotelRepository.deleteByTitle(title) == 0) {
@@ -59,6 +104,16 @@ public class ServiceHotelServiceImpl implements ServiceHotelInternalService {
         }
     }
 
+    /**
+     * Обновляет данные существующего сервиса.
+     * <p>
+     * Сервис идентифицируется по названию. Все поля из DTO копируются в существующую сущность.
+     * </p>
+     *
+     * @param serviceHotelDTO обновлённые данные сервиса
+     * @return DTO обновлённого сервиса
+     * @throws HotelDataNotFoundException если сервис с указанным названием не найден
+     */
     // TODO : переделать для админа и менеджера для изменений см. репорт сервисы
     @Transactional
     public ServiceHotelDTO changeDataServiceHotel(ServiceHotelDTO serviceHotelDTO) {
@@ -72,6 +127,12 @@ public class ServiceHotelServiceImpl implements ServiceHotelInternalService {
         return ServiceHotelMapper.INSTANCE.serviceToServiceDTO(serviceHotelRepository.save(serviceHotel));
     }
 
+    /**
+     * Возвращает сущность сервиса по названию (точное совпадение, регистронезависимо).
+     *
+     * @param title название сервиса
+     * @return сущность {@link ServiceHotel} или {@code null}, если не найдена
+     */
     public ServiceHotel findServiceHotelByTitle(String title) {
         return serviceHotelRepository.findByTitle(title).orElse(null);
     }

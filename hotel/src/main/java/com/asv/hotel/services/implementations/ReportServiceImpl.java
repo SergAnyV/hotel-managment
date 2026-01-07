@@ -56,6 +56,7 @@ public class ReportServiceImpl implements ReportService {
     private final ReportAttachmentInternalService reportAAttachmentService;
     private final RoomInternalService roomService;
     private final UserInternalService userService;
+
     /**
      * Создаёт новый отчёт указанного типа для заданной комнаты.
      * <p>
@@ -75,7 +76,7 @@ public class ReportServiceImpl implements ReportService {
      * @param roomNumber        номер комнаты (будет обрезан от пробелов)
      * @param multipartFileList список загружаемых файлов (может быть {@code null} или пустым)
      * @return {@link com.asv.hotel.dto.reportdto.ReportDTO} созданного отчёта или {@code null},
-     *         если комната с указанным номером не существует
+     * если комната с указанным номером не существует
      * @throws RuntimeException при ошибках сохранения или обработки файлов (пробрасываются из зависимых сервисов)
      */
     @Transactional
@@ -109,6 +110,7 @@ public class ReportServiceImpl implements ReportService {
 
         return ReportMapper.INSTANCE.reportToReportDTO(report);
     }
+
     /**
      * Добавляет одно или несколько вложений к существующему отчёту.
      * <p>
@@ -127,7 +129,7 @@ public class ReportServiceImpl implements ReportService {
      * @param reportId          идентификатор существующего отчёта
      * @param multipartFileList непустой список файлов для прикрепления
      * @throws com.asv.hotel.exceptions.HotelDataNotFoundException если отчёт не найден
-     * @throws com.asv.hotel.exceptions.HotelIncorrectInputData   если файлы отсутствуют,
+     * @throws com.asv.hotel.exceptions.HotelIncorrectInputData    если файлы отсутствуют,
      *                                                             пусты или не содержат допустимых форматов
      */
     @Transactional
@@ -158,6 +160,7 @@ public class ReportServiceImpl implements ReportService {
         }
         reportRepository.save(report);
     }
+
     /**
      * Удаляет конкретное вложение из отчёта по идентификаторам.
      * <p>
@@ -176,7 +179,7 @@ public class ReportServiceImpl implements ReportService {
      * @param reportAttachmentId идентификатор удаляемого вложения
      * @throws com.asv.hotel.exceptions.HotelDataNotFoundException если отчёт не существует
      *                                                             или у пользователя нет прав на удаление
-     * @throws com.asv.hotel.exceptions.HotelIncorrectInputData   если вложение с таким ID не найдено
+     * @throws com.asv.hotel.exceptions.HotelIncorrectInputData    если вложение с таким ID не найдено
      *                                                             или не принадлежит указанному отчёту
      */
     @Transactional
@@ -194,7 +197,7 @@ public class ReportServiceImpl implements ReportService {
             return;
         }
         log.warn("не совпадение ролей  или владельцев запрашиваемых ресурсов " +
-                "requester nick={} , role={} , owner nick={} , role={}",
+                        "requester nick={} , role={} , owner nick={} , role={}",
                 userRequester.getNickName(),
                 userRequester.getType().getRole(),
                 userOwner.getNickName(),
