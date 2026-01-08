@@ -52,6 +52,8 @@ services:
     container_name: config-service
     ports:
       - "8082:8082"
+    environment:
+      SPRING_PROFILES_ACTIVE: docker,native
     volumes:
       - ./config-service/src/main/resources/services:/config/services:ro
     depends_on:
@@ -87,9 +89,9 @@ services:
     ports:
       - "8080:8083"
     environment:
-      SPRING_PROFILES_ACTIVE: prod
-      SPRING_CONFIG_IMPORT: configserver:http://config-service:8082
-      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://discovery-service:8081/eureka/
+      SPRING_PROFILES_ACTIVE: docker,prod
+#      SPRING_CONFIG_IMPORT: configserver:http://config-service:8082
+#      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://discovery-service:8081/eureka/
       DB_USER: ${DB_USER:-postgres}
       DB_PASSWORD: ${DB_PASSWORD:-postgres}
       ACCEESS_SECRET: ${ACCEESS_SECRET}
@@ -123,8 +125,9 @@ services:
       dockerfile: Dockerfile
     container_name: tg-service
     environment:
-      SPRING_CONFIG_IMPORT: configserver:http://config-service:8082
-      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://discovery-service:8081/eureka/
+      SPRING_PROFILES_ACTIVE: docker
+#      SPRING_CONFIG_IMPORT: configserver:http://config-service:8082
+#      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://discovery-service:8081/eureka/
       DB_USER: ${DB_USER}
       DB_PASSWORD: ${DB_PASSWORD}
       TG_TOKEN: ${TG_TOKEN}
