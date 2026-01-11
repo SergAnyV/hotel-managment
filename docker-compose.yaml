@@ -53,7 +53,7 @@ services:
     ports:
       - "8082:8082"
     environment:
-      SPRING_PROFILES_ACTIVE: docker,native
+      SPRING_PROFILES_ACTIVE: docker
     volumes:
       - ./config-service/src/main/resources/services:/config/services:ro
     depends_on:
