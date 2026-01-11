@@ -9,7 +9,7 @@ import org.springframework.stereotype.Component;
  * Класс для хранения секретных ключей JWT.
  * Содержит отдельные ключи для подписи access и refresh токенов.
  *
- * <p>Ключи загружаются из файла application.properties
+ * <p>Ключи загружаются из файла application-docker.properties
  * с префиксом {@code jwt.secret}.
  */
 
