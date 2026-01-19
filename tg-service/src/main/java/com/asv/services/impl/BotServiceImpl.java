@@ -41,6 +41,7 @@ public class BotServiceImpl implements BotService {
     private final HotelClientFeign hotelClientFeign;
     private final UserSessionStorage sessionStorage;
     private final ChatEntityRepository chatEntityRepository;
+    private final RateLimiter rateLimiter;
 
     @Override
     public void handleUpdate(Update update) {
@@ -48,6 +49,12 @@ public class BotServiceImpl implements BotService {
             Message msg = update.getMessage();
             long chatId = msg.getChatId();
             int messageId = msg.getMessageId();
+
+            if (!rateLimiter.allow(chatId)) {
+                sender.sendMessage(chatId, "Вы отправляете слишком много сообщений. Подождите немного.");
+                return;
+            }
+
             String text = msg.getText().strip();
             String username = msg.getFrom().getUserName();
             log.info("User {} chat Id {} text {}", username, chatId, text);
